@@ -29,6 +29,11 @@ void *client_func(void *args){
         sendMessage(server_fd, buffer);
         free(buffer);
         buffer = recvMessage(server_fd);
+        if (strcmp(buffer, "abort") == 0) {
+            buffer = "The server has gone away\n";
+            sendMessage(client_fd, buffer);
+            break;
+        }
         sendMessage(client_fd, buffer);
         free(buffer);
     }
