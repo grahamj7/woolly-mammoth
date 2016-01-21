@@ -22,15 +22,12 @@ run_server: Server
 run_proxy: Proxy
 	./Proxy localhost 30490
 
-run_client: Client
-	./Client localhost test
-
 RUN: Server Proxy
 	./Server &
 	./Proxy localhost 30490 &
 
 Server: server.c tcp.c
-	$(CC) $(CCFLAGS) -o Server server.c tcp.c
+	$(CC) $(CCFLAGS) -o Server tcp_server.c tcp.c
 
 Proxy: proxy.c tcp.c
-	$(CC) $(CCFLAGS) -o Proxy proxy.c tcp.c
+	$(CC) $(CCFLAGS) -o Proxy tcp_proxy.c tcp.c
