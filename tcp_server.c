@@ -3,7 +3,7 @@
  *
  * Jordaen Graham - jhg257
  *
- * File: server.c
+ * File: tcp_server.c
  */
 
 #include "server.h"
@@ -17,8 +17,19 @@ char *usage = "\nUsage:\n\tadd key value : add (key, value) pair, if no existing
         "\tremove key : remove matching (key, value) pair, if any\n"
         "\tquit : exit the server\n\n";
 
+int check_duplicate(char *key){
+    struct nodes *cursor = head;
+    while (cursor != NULL){
+        if (strcmp(cursor->tuple->key, key) == 0)
+            return 1;
+        cursor = cursor->next;
+    }
+    return 0;
+}
 
 char *add_value(char *key, char *value){
+    char *message;
+    size_t size;
     struct nodes *node = malloc(sizeof(struct nodes));
     struct tuples *tuple = malloc(sizeof(struct tuples));
     if (key == NULL){
@@ -28,6 +39,14 @@ char *add_value(char *key, char *value){
         strcat(key, " has failed to be added, value is required\n");
         return key;
     }
+
+    if (check_duplicate(key)) {
+        size = strlen(key)+34;
+        message = malloc(size * sizeof(char));
+        snprintf(message, size, "Key(%s) already exists in the list\n", key);
+        return message;
+    }
+
     // Create Node/Tuple
     tuple->key = malloc(10*sizeof(char));
     tuple->value = malloc(200*sizeof(char));
@@ -41,8 +60,8 @@ char *add_value(char *key, char *value){
         node->next = head;
     head = node;
 
-    size_t size = strlen(key)+31;
-    char *message = malloc(size * sizeof(char));
+    size = strlen(key)+31;
+    message = malloc(size * sizeof(char));
     snprintf(message, size, "%s: has been added successfully\n", key);
     return message;
 }
@@ -75,7 +94,6 @@ char *getall_values(){
         snprintf(temp, size, "%s\n%s: %s", result, cursor->tuple->key, cursor->tuple->value);
         cursor = cursor->next;
         result = temp;
-        free(temp);
     }
     if (strcmp(result, "") == 0) {
         result = "There are no values in the list";
@@ -143,7 +161,9 @@ void *server(void *args) {
 
 
         if (strcmp(arg, "add") == 0) {
-            message = add_value(strtok(NULL, " "), strtok(NULL, " "));
+			char *key = strtok(NULL, " ");
+			char *value = strtok(NULL, " ");
+            message = add_value(key, value);
         }
         else if (strcmp(arg, "getvalue") == 0) {
             message = get_value(strtok(NULL, " "));

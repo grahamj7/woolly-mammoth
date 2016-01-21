@@ -3,7 +3,7 @@
  *
  * Jordaen Graham - jhg257
  *
- * File: proxy.c
+ * File: tcp_proxy.c
  */
 
 #include "server.h"
