@@ -18,13 +18,13 @@ clean:
 
 RUN: UDP Proxy
 	./UDP &
-	./Proxy &
+	./Proxy localhost 35951 &
 
 run_server: UDP
 	./UDP
 
 run_proxy: Proxy
-	./Proxy
+	./Proxy localhost 35951
 
 UDP: udp_server.c
 	$(CC) $(CCFLAGS) -o UDP udp_server.c
