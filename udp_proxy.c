@@ -3,7 +3,7 @@
  *
  * Jordaen Graham - jhg257
  *
- * File: client.c
+ * File: udp_proxy.c
  */
 
 #include "server.h"
