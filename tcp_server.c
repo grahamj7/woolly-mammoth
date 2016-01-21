@@ -8,7 +8,6 @@
 
 #include "server.h"
 
-
 struct nodes *head;
 
 char *usage = "\nUsage:\n\tadd key value : add (key, value) pair, if no existing pair with same key value\n"
@@ -28,7 +27,7 @@ int check_duplicate(char *key){
 }
 
 char *add_value(char *key, char *value){
-    char *message;
+    char *message="", *temp;
     size_t size;
     struct nodes *node = malloc(sizeof(struct nodes));
     struct tuples *tuple = malloc(sizeof(struct tuples));
@@ -40,13 +39,25 @@ char *add_value(char *key, char *value){
         return key;
     }
 
+    if (strlen(key) > 10) {
+        key[10] = '\0';
+        size = 52;
+        message = malloc(size * sizeof(char));
+        snprintf(message, size, "Key is too large, it will be trimmed to %s\n", key);
+    }
+    if (strlen(value) > 200) {
+        value[200] = '\0';
+        size = 244;
+        message = malloc(size * sizeof(char));
+        snprintf(message, size, "Value is too large, it will be trimmed to %s\n", value);
+    }
+
     if (check_duplicate(key)) {
         size = strlen(key)+34;
         message = malloc(size * sizeof(char));
         snprintf(message, size, "Key(%s) already exists in the list\n", key);
         return message;
     }
-
     // Create Node/Tuple
     tuple->key = malloc(10*sizeof(char));
     tuple->value = malloc(200*sizeof(char));
@@ -60,9 +71,11 @@ char *add_value(char *key, char *value){
         node->next = head;
     head = node;
 
-    size = strlen(key)+31;
+    size = strlen(key)+31+strlen(message);
+    temp = message;
     message = malloc(size * sizeof(char));
-    snprintf(message, size, "%s: has been added successfully\n", key);
+    snprintf(message, size, "%s%s: has been added successfully\n", temp, key);
+    free(temp);
     return message;
 }
 
