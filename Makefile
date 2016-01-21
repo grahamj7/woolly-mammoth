@@ -8,28 +8,28 @@
 CC := gcc
 CCFLAGS := -Wall -Wextra -pedantic -pthread -g
 
-all: clean UDP Client
+all: clean UDP Proxy
 
 clean:
 	@rm *.o* &> /dev/null || true
 	@rm *~ &> /dev/null || true
-	@rm Client &> /dev/null || true
+	@rm Proxy &> /dev/null || true
 	@rm UDP &> /dev/null || true
 
-RUN: UDP Client
+RUN: UDP Proxy
 	./UDP &
-	./Client &
+	./Proxy &
 
-run_udp: UDP
+run_server: UDP
 	./UDP
 
-run_client: Client
-	./Client
+run_proxy: Proxy
+	./Proxy
 
-UDP: udp.c
-	$(CC) $(CCFLAGS) -o UDP udp.c
+UDP: udp_server.c
+	$(CC) $(CCFLAGS) -o UDP udp_server.c
 
-Client: client.c tcp.c
-	$(CC) $(CCFLAGS) -o Client client.c tcp.c
+Proxy: udp_proxy.c tcp.c
+	$(CC) $(CCFLAGS) -o Proxy udp_proxy.c tcp.c
 
 
