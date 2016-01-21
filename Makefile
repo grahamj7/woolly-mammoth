@@ -26,8 +26,8 @@ RUN: Server Proxy
 	./Server &
 	./Proxy localhost 30490 &
 
-Server: server.c tcp.c
+Server: tcp_server.c tcp.c
 	$(CC) $(CCFLAGS) -o Server tcp_server.c tcp.c
 
-Proxy: proxy.c tcp.c
+Proxy: tcp_proxy.c tcp.c
 	$(CC) $(CCFLAGS) -o Proxy tcp_proxy.c tcp.c
