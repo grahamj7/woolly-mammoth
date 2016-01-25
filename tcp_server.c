@@ -167,7 +167,8 @@ void *server(void *args) {
             break;
         }
         else if(strcmp(buffer, "") == 0) {
-            buffer = " ";
+            buffer = malloc(sizeof(char));
+            snprintf(buffer, 2, "x\0");
         }
 
         arg = malloc(10 * sizeof(char));
@@ -195,7 +196,6 @@ void *server(void *args) {
             message = malloc(size* sizeof(char));
             snprintf(message, size, "Incorrect Call\n%s\n", usage);
         }
-
         sendMessage(client_fd, message);
 
         if (NULL != arg)
