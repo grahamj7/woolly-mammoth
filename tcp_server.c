@@ -65,7 +65,6 @@ char *add_value(char *key, char *value){
     strcpy(tuple->value, value);
     node->next = NULL;
     node->tuple = tuple;
-
     // Add Node to List
     if (NULL != head)
         node->next = head;
@@ -75,7 +74,9 @@ char *add_value(char *key, char *value){
     temp = message;
     message = malloc(size * sizeof(char));
     snprintf(message, size, "%s%s: has been added successfully\n", temp, key);
-    free(temp);
+    if (strcmp(temp, "") != 0)
+        free(temp);
+
     return message;
 }
 
@@ -165,6 +166,9 @@ void *server(void *args) {
         else if (strcmp(buffer, "abort") == 0) {
             break;
         }
+        else if(strcmp(buffer, "") == 0) {
+            buffer = " ";
+        }
 
         arg = malloc(10 * sizeof(char));
         strcpy(arg, strtok(buffer, " "));
@@ -172,10 +176,9 @@ void *server(void *args) {
         for ( ; *arg; ++arg) *arg = tolower(*arg);
         arg = temp;
 
-
         if (strcmp(arg, "add") == 0) {
-			char *key = strtok(NULL, " ");
-			char *value = strtok(NULL, " ");
+            char *key = strtok(NULL, " ");
+            char *value = strtok(NULL, " ");
             message = add_value(key, value);
         }
         else if (strcmp(arg, "getvalue") == 0) {
