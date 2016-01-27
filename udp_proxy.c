@@ -23,7 +23,7 @@ int udp_setup(char *host, char *port){
         exit(1);
     }
 
-    // loop through all the results and make a socket
+    /* loop through all the results and make a socket */
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((server_fd = socket(p->ai_family, p->ai_socktype,
                                 p->ai_protocol)) == -1) {
@@ -64,34 +64,33 @@ void *client_func(void *args){
         }
 
         if (strcmp(buffer, "getall") == 0) {
-            // if getall loop for responses
+            /* if getall loop for responses */
             char *message;
             size_t size;
-            printf("Getall\n");
+
             while(1) {
                 buffer = malloc((MAXDATASIZE - 1) * sizeof(char));
                 bzero(buffer, MAXDATASIZE);
                 struct sockaddr_storage their_addr;
                 socklen_t addr_len;
                 addr_len = sizeof their_addr;
-                printf("Before: {%s}\n", buffer);
+
                 if ((recvfrom(server_fd, buffer, MAXDATASIZE - 1,
                               0, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
                     perror("recvfrom");
                     exit(1);
                 }
-                printf("Recv: {%s}\n", buffer);
+
                 if (strcmp(buffer, "DONE") == 0)
                     break;
                 strcat(buffer, "\n");
-                printf("Send: {%s}\n", buffer);
                 sendTCPMessage(nc_client_fd, buffer);
                 free(buffer);
             }
 
             free(buffer);
         } else {
-            // get Response
+            /* get Response */
             buffer = malloc((MAXDATASIZE - 1) * sizeof(char));
 
             struct sockaddr_storage their_addr;
@@ -130,13 +129,6 @@ void run_proxy_server(){
             perror("start pthread");
             exit(2);
         }
-
-//        TODO
-//        if (pthread_create(&client_thread, NULL, client_listener, &client_fd) == -1){
-//            perror("start pthread");
-//            exit(2);
-//        }
-
     }
 }
 

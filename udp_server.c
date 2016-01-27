@@ -31,7 +31,8 @@ char *add_value(char *key, char *value){
         strcat(key, " has failed to be added, value is required\n");
         return key;
     }
-    // Create Node/Tuple
+    
+    /* Create Node/Tuple */
     tuple->key = malloc(10*sizeof(char));
     tuple->value = malloc(200*sizeof(char));
     strcpy(tuple->key, key);
@@ -39,7 +40,7 @@ char *add_value(char *key, char *value){
     node->next = NULL;
     node->tuple = tuple;
 
-    // Add Node to List
+    /* Add Node to List */
     if (NULL != head)
         node->next = head;
     head = node;
@@ -174,7 +175,7 @@ char *evaluate(char *buffer){
     return message;
 }
 
-// get sockaddr, IPv4 or IPv6:
+/* get sockaddr, IPv4 or IPv6: */
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
@@ -194,16 +195,16 @@ int main(void)
     char *message;
 
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
+    hints.ai_family = AF_UNSPEC; /* set to AF_INET to force IPv4 */
     hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_PASSIVE; // use my IP
+    hints.ai_flags = AI_PASSIVE; /* use my IP */
 
     if ((getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
         perror("getaddrinfo");
         return 1;
     }
 
-    // loop through all the results and bind to the first we can
+    /* loop through all the results and bind to the first we can */
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
                              p->ai_protocol)) == -1) {
@@ -242,7 +243,7 @@ int main(void)
 
         message = evaluate(buf);
         printf("Message: {%s}\n", message);
-        // Send back results
+        /* Send back results */
         if(sendto(sockfd, message, (size_t) strlen(message), flags, (struct sockaddr *)&their_addr, addr_len) == -1){ //
             perror("listener: sendto");
             exit(1);
