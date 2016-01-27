@@ -78,7 +78,7 @@ char *getall_values(){
         snprintf(temp, size, "%s\n%s: %s", result, cursor->tuple->key, cursor->tuple->value);
         cursor = cursor->next;
         result = temp;
-        free(temp);
+
     }
     if (strcmp(result, "") == 0) {
         result = "There are no values in the list";
@@ -125,6 +125,7 @@ void send_all_values(char *value_list){
 
     value = strtok(value_list, "\n");
     while (value != NULL) {
+        printf("Val: {%s}\n", value);
         if(sendto(server_fd, value, (size_t) strlen(value), 0, (struct sockaddr *)&their_addr, addr_len) == -1){ //
             perror("listener: sendto");
             exit(1);
@@ -148,7 +149,8 @@ char *evaluate(char *buffer){
     arg = temp;
 
     if (strcmp(arg, "add") == 0) {
-        message = add_value(strtok(NULL, " "), strtok(NULL, " "));
+        char *key = strtok(NULL, " "), *value = strtok(NULL, " ");
+        message = add_value(key, value);
     }
     else if (strcmp(arg, "getvalue") == 0) {
         message = get_value(strtok(NULL, " "));
@@ -169,7 +171,6 @@ char *evaluate(char *buffer){
         snprintf(message, size, "Incorrect Call\n%s\n", usage);
     }
 
-	printf("Message: %s\n", message);
     return message;
 }
 
@@ -227,19 +228,20 @@ int main(void)
     freeaddrinfo(servinfo);
     server_fd = sockfd;
 
-    printf("Server listening on port: %s\n", PORT);
+    char *pos;
     while(1) {
+        printf("Server listening on port: %s\n", PORT);
         addr_len = sizeof their_addr;
         int flags = 0;
-        if ((numbytes = (int) recvfrom(sockfd, buf, MAXDATASIZE - 1, flags,
-                                         (struct sockaddr *) &their_addr, &addr_len)) == -1) {
+        if ((numbytes = (int) recvfrom(sockfd, buf, MAXDATASIZE - 1, flags, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
             perror("recvfrom");
             exit(1);
         }
+        if ((pos=strchr(buf, '\n')) != NULL)
+            *pos = '\0';
 
-        buf[numbytes] = '\0';
-		printf("Request: %s\n", buf);
         message = evaluate(buf);
+        printf("Message: {%s}\n", message);
         // Send back results
         if(sendto(sockfd, message, (size_t) strlen(message), flags, (struct sockaddr *)&their_addr, addr_len) == -1){ //
             perror("listener: sendto");

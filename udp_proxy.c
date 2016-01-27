@@ -38,25 +38,16 @@ int udp_setup(char *host, char *port){
         perror("talker: failed to create socket");
         exit(2);
     }
+
     return server_fd;
 }
 
-//TODO
-//void *client_listener(void *args){
-//    int client_fd = *(int*)args;
-//    char *buffer;
-//
-//
-//
-//    pthread_exit(NULL);
-//}
-
 void *client_func(void *args){
-    int client_fd = *(int*)args;
+    int nc_client_fd = *(int*)args;
     char *buffer;
 
     while(1) {
-        buffer = recvTCPMessage(client_fd);
+        buffer = recvTCPMessage(nc_client_fd);
         char *pos;
         if ((pos=strchr(buffer, '\n')) != NULL)
             *pos = '\0';
@@ -65,9 +56,8 @@ void *client_func(void *args){
         else if (strcmp(buffer, "abort") == 0) {
             break;
         }
-		printf("Buffer: %s\n", buffer);
-
-        if ((sendto(server_fd, buffer, strlen(buffer),
+		
+		if ((sendto(server_fd, buffer, strlen(buffer)+1,
                     0, servinfo->ai_addr, servinfo->ai_addrlen)) == -1) {
             perror("talker: sendto");
             exit(1);
@@ -77,31 +67,28 @@ void *client_func(void *args){
             // if getall loop for responses
             char *message;
             size_t size;
+            printf("Getall\n");
             while(1) {
                 buffer = malloc((MAXDATASIZE - 1) * sizeof(char));
-
+                bzero(buffer, MAXDATASIZE);
                 struct sockaddr_storage their_addr;
                 socklen_t addr_len;
                 addr_len = sizeof their_addr;
-
+                printf("Before: {%s}\n", buffer);
                 if ((recvfrom(server_fd, buffer, MAXDATASIZE - 1,
                               0, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
                     perror("recvfrom");
                     exit(1);
                 }
-
-				printf("Reply: %s\n", buffer);
+                printf("Recv: {%s}\n", buffer);
                 if (strcmp(buffer, "DONE") == 0)
                     break;
-                size = strlen(buffer)+2;
-                message = malloc(size * sizeof(char));
-                snprintf(message, size, "%s\n", buffer);
-				printf("Message: %s\n", message);
-                sendTCPMessage(client_fd, message);
+                strcat(buffer, "\n");
+                printf("Send: {%s}\n", buffer);
+                sendTCPMessage(nc_client_fd, buffer);
                 free(buffer);
-                free(message);
             }
-			printf("Response: %s\n", buffer);
+
             free(buffer);
         } else {
             // get Response
@@ -116,13 +103,12 @@ void *client_func(void *args){
                 perror("recvfrom");
                 exit(1);
             }
-			printf("Response: %s\n", buffer);
-            sendTCPMessage(client_fd, buffer);
+            sendTCPMessage(nc_client_fd, buffer);
             free(buffer);
         }
     }
 
-    close(client_fd);
+    close(nc_client_fd);
     pthread_exit(NULL);
 }
 
