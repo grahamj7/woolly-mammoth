@@ -126,7 +126,7 @@ void send_all_values(char *value_list){
 
     value = strtok(value_list, "\n");
     while (value != NULL) {
-        printf("Val: {%s}\n", value);
+
         if(sendto(server_fd, value, (size_t) strlen(value), 0, (struct sockaddr *)&their_addr, addr_len) == -1){ //
             perror("listener: sendto");
             exit(1);
@@ -228,10 +228,10 @@ int main(void)
 
     freeaddrinfo(servinfo);
     server_fd = sockfd;
+    printf("Server listening on port: %s\n", PORT);
 
     char *pos;
     while(1) {
-        printf("Server listening on port: %s\n", PORT);
         addr_len = sizeof their_addr;
         int flags = 0;
         if ((numbytes = (int) recvfrom(sockfd, buf, MAXDATASIZE - 1, flags, (struct sockaddr *) &their_addr, &addr_len)) == -1) {
@@ -242,7 +242,7 @@ int main(void)
             *pos = '\0';
 
         message = evaluate(buf);
-        printf("Message: {%s}\n", message);
+
         /* Send back results */
         if(sendto(sockfd, message, (size_t) strlen(message), flags, (struct sockaddr *)&their_addr, addr_len) == -1){ //
             perror("listener: sendto");

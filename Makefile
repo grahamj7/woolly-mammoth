@@ -20,6 +20,10 @@ RUN: UDP Proxy
 	./UDP &
 	./Proxy localhost 35951 &
 
+KILL:
+	@kill -9 `ps | grep UDP | cut -d" " -f1` &> /dev/null ;\
+	kill -9 `ps | grep Proxy | cut -d" " -f1` &> /dev/null ; true
+
 run_server: UDP
 	./UDP
 
