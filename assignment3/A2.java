@@ -1,4 +1,4 @@
-package assigment3;
+package assignment3;
 
 import javafx.application.Application;
 import javafx.scene.Scene;

@@ -1,4 +1,4 @@
-package assigment3;
+package assignment3;
 
 
 import javafx.application.Application;
@@ -145,12 +145,12 @@ public class A3 extends Application {
     }
 
     public void create_checkboxes() {
-        africa = new MyCheckBox("Africa", message_log, country_list);
-        asia = new MyCheckBox("Asia", message_log, country_list);
-        n_america = new MyCheckBox("North America", message_log, country_list);
-        s_america = new MyCheckBox("South America", message_log, country_list);
-        europe = new MyCheckBox("Europe", message_log, country_list);
-        australia = new MyCheckBox("Australia", message_log, country_list);
+        africa = new MyCheckBox("Africa", message_log, country_list, listview);
+        asia = new MyCheckBox("Asia", message_log, country_list, listview);
+        n_america = new MyCheckBox("North America", message_log, country_list, listview);
+        s_america = new MyCheckBox("South America", message_log, country_list, listview);
+        europe = new MyCheckBox("Europe", message_log, country_list, listview);
+        australia = new MyCheckBox("Australia", message_log, country_list, listview);
     }
 
     public void create_center() {
@@ -186,9 +186,6 @@ public class A3 extends Application {
         vbButtons.setPadding(new Insets(10, 20, 10, 20));
         vbButtons.getChildren().addAll(save, quit);
         vbButtons.setMaxHeight(VBox.USE_PREF_SIZE);
-
-        vbButtons.setBackground(new Background(new BackgroundFill(Color.BROWN, CornerRadii.EMPTY, Insets.EMPTY)));
-        bottomPane.setBackground(new Background(new BackgroundFill(Color.BLUEVIOLET, CornerRadii.EMPTY, Insets.EMPTY)));
 
         topPane.setPadding(new Insets(10, 20, 10, 20));
         topPane.getChildren().addAll(button1,button2,button3,button4,button5,button6);
@@ -327,7 +324,7 @@ class MyCheckBox extends CheckBox {
     static HashMap<String, LinkedList<String>> continents_list;
     static HashMap<String, Boolean> instances;
 
-    MyCheckBox(String text, TextArea log, ObservableList<String> list) {
+    MyCheckBox(String text, TextArea log, ObservableList<String> list, ListView<String> listview) {
         super(text);
         this.setSelected(true);
         this.setMaxHeight(Double.MAX_VALUE);
@@ -357,6 +354,11 @@ class MyCheckBox extends CheckBox {
                 else if (entry.getKey().equals("europe")) {list.addAll(continents_list.get("europe"));}
                 else if (entry.getKey().equals("australia")) {list.addAll(continents_list.get("australia"));}
             });
+
+            if (listview.getSelectionModel().getSelectedItem() == null) {
+                listview.getSelectionModel().select(0);
+                message_log.appendText(String.format("Current Selection has been removed, now selected %s\n", listview.getSelectionModel().getSelectedItem()));
+            }
         });
     }
 
