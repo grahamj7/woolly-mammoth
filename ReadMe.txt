@@ -1,9 +1,9 @@
-CMPT 332 - Winter 2016
+CMPT 434 - Winter 2016
 Assignment 4, Questions 1,2
 
 Jordaen Graham - jhg257
 
-File: Documentation.txt
+File: ReadMe.txt
 ========================================
 Files included:
 
@@ -12,25 +12,26 @@ Makefile
 tcp.c
     Connection methods to reduce duplicating code in each file
 
-proxy.c
+tcp_proxy.c
     Proxy server that redirects request to the main server
 
-server.c
+tcp_server.c
     Main server that contains the list if keys and values
 
 server.h
   Header file for the server.
   
-============
-What is working:
 
-What is not working:
+How to run:
+To compile the Server and Proxy Server
+  make Server Proxy
 
+To run the server and proxy:
+  ./Server
+  ./Proxy serverhost serverport
 
-============
-Test results:
-
-
+To connect to the proxy:
+  netcat host proxyport
 
 
 Here's a dinosaur for your marking enjoyment:

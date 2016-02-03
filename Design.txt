@@ -1,0 +1,26 @@
+CMPT 434 - Winter 2016
+Assignment 4, Questions 1,2
+
+Jordaen Graham - jhg257
+
+File: Design.txt
+========================================
+
+Server Runs on designated port "30490"
+Proxy runs on designated port "30491"
+
+When starting the Proxy, you can specify the server's host and port number to target the proper server
+
+First ther server must be running, then the proxy creates a TCP connection to the server. If the server goes down before the proxy leaves, the proxy will crash. 
+
+Once both the server and proxy are running, you can use netcat to connect to either service using their host name and port number
+
+When a user sends a request to the proxy, it just forwards it to the server. When the server replies to the request, the proxy just forwards it to the user.
+
+The server parses the request to check if it's an Add, GetAll, GetValue or Remove command. If the request doesn't match one of those, the server replies to the user with the proper usage commands.
+
+If the request does match a command, the server then evaluates the command and replies accordingly
+
+There is a max size for keys to be 10 characters, if the key is too long it is truncated to 10 characters.
+There is a max size for values to be 200 characters, if the value is too long it is truncated to 200 characters.
+
