@@ -80,7 +80,7 @@ void runReceiver() {
     }
 }
 
-int main(int argc, cahr **argv)
+int main(int argc, char **argv)
 {
 	int rv, yes=1;
 	struct addrinfo hints, *servinfo, *p;
