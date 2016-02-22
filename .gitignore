@@ -1,5 +1,4 @@
 CMakeLists.txt
 .idea/
-Proxy*
-Server*
-UDP*
+Sender*
+Receiver*

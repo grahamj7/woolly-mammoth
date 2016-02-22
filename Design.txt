@@ -1,0 +1,10 @@
+CMPT 434 - Winter 2016
+Assignment 2, Question 1
+
+Jordaen Graham - jhg257
+
+File: Design.txt
+========================================
+
+Receiver runs on designated port "?????"
+

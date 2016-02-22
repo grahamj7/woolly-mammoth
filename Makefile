@@ -1,5 +1,5 @@
 # CMPT 434 - Winter 2016
-# Assignment 1, Question 3
+# Assignment 2, Question 1
 #
 # Jordaen Graham - jhg257
 #
@@ -8,32 +8,33 @@
 CC := gcc
 CCFLAGS := -Wall -Wextra -pedantic -pthread -g
 
-all: clean UDP Proxy
+all: clean Receiver Sender
 
 clean:
 	@rm *.o* &> /dev/null || true
 	@rm *~ &> /dev/null || true
-	@rm Proxy &> /dev/null || true
-	@rm UDP &> /dev/null || true
+	@rm Receiver &> /dev/null || true
+	@rm Sender &> /dev/null || true
 
-RUN: UDP Proxy
-	./UDP &
-	./Proxy localhost 35951 &
+RUN: Receiver
+	./Receiver &
+	./Sender &
 
 KILL:
-	@kill -9 `ps | grep UDP | cut -d" " -f1` &> /dev/null ;\
-	kill -9 `ps | grep Proxy | cut -d" " -f1` &> /dev/null ; true
+	@kill -9 `ps | grep Receiver | cut -d" " -f1` &> /dev/null ;\
+	@kill -9 `ps | grep Sender | cut -d" " -f1` &> /dev/null ;\
 
-run_server: UDP
-	./UDP
+run_receiver: Receiver
+	./Receiver
 
-run_proxy: Proxy
-	./Proxy localhost 35951
+Receiver: receiver.c
+	$(CC) $(CCFLAGS) -o Receiver receiver.c
 
-UDP: udp_server.c
-	$(CC) $(CCFLAGS) -o UDP udp_server.c
+run_sender: Sender
+	./Sender
+#	./Sender 127.0.0.1 3950 20 10
 
-Proxy: udp_proxy.c tcp.c
-	$(CC) $(CCFLAGS) -o Proxy udp_proxy.c tcp.c
+Sender: sender.c
+	$(CC) $(CCFLAGS) -o Sender sender.c
 
 
