@@ -79,7 +79,7 @@ void *sendMessage(void *args) {
         if (recvfrom(sock_fd, buf, MAXBUFLEN - 1, 0, (struct sockaddr *) &their_addr, &addr_len) > 0) {
             temp = malloc(strlen(buf) * sizeof(char));
             strcpy(temp, buf);
-            if (atoi(strtok(buf, ":")) == values->sequence_num) {
+            if (atoi(strtok(buf, ":")) >= values->sequence_num) {
                 free(temp);
                 break;
             }
