@@ -21,7 +21,7 @@ struct message_queue{
 pthread_cond_t cond;
 pthread_mutex_t queue_mutex, window_mutex;
 struct message_queue *MessageQueue;
-int sock_fd=-1, queue_size=0, window_size=WINDOW_SIZE, timeout=60, sender_count=0, sequence=0;
+int sock_fd=-1, queue_size=0, window_size=WINDOW_SIZE, timeout=30, sender_count=0, sequence=0, rMax=0;
 struct	sockaddr *ai_addr;
 socklen_t ai_addrlen;
 
@@ -37,7 +37,7 @@ char *readFromMessageQueue(){
     return text;
 }
 
-void addToMessageQueue(char *text){
+void addToMessageQueue(char *text) {
     pthread_mutex_lock(&queue_mutex);
 
     struct message_queue *queue, *current = MessageQueue;
@@ -149,7 +149,9 @@ int main(int argc, char *argv[]) {
         window_size = atoi(argv[3]);
     if (argc > 4)
         timeout = atoi(argv[4]);
-    printf("Receiver: host: %s, port: %s, windows: %d, timeout: %ds\n", host, port, window_size, timeout);
+    if (argc > 5)
+        rMax = atoi(argv[5]);
+    printf("Receiver: host: %s, port: %s, windows: %d, timeout: %ds, rMax: %d\n", host, port, window_size, timeout, rMax);
 
     /* Connect to the Receiver */
     memset(&hints, 0, sizeof hints);

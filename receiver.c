@@ -8,7 +8,7 @@
 #include "server.h"
 
 int sock_fd=-1, acks=0;
-double packet_loss=0.0;
+double packet_loss=1.0;
 
 void sigchld_handler(int s)
 {
@@ -25,15 +25,18 @@ int corruption(char *temp) {
     size_t len = 0;
     int val;
     printf("Received: %s, Correct? ", temp);
+    fflush(stdout);
     getline(&text, &len, stdin);
+    printf("After: %s\n", text);
     val = 'Y' == *text;
     free(text);
     return val;
 }
 
 int acknowledge(char *num, struct sockaddr_storage their_addr, socklen_t addr_len) {
-    if (acks*packet_loss == 0) {
-        char *response = malloc((strlen(num) + 3) * sizeof(char));
+    acks++;
+    if (acks*packet_loss != 0.0) {
+        char *response = malloc((strlen(num) + 4) * sizeof(char));
         snprintf(response, strlen(num) + 5, "%s:ACK", num);
         if (sendto(sock_fd, response, strlen(response) + 1, 0, (struct sockaddr *) &their_addr, addr_len) == -1) {
             perror("sendto");
@@ -41,13 +44,11 @@ int acknowledge(char *num, struct sockaddr_storage their_addr, socklen_t addr_le
         }
         free(response);
     }
-    acks++;
     return atoi(num);
 }
 
 void runReceiver() {
     char buf[MAXBUFLEN], *pos, *temp, *header;
-    int prev_num=-1;
 
     struct sockaddr_storage their_addr; /* connector's address information */
     socklen_t addr_len;
@@ -65,22 +66,14 @@ void runReceiver() {
         strcpy(temp, buf);
         header = strtok(buf, ":");
 
-        printf("Got: %s, Expected: %d, %d\n", header, (prev_num+1), (prev_num+1) == atoi(header));
-        if ((prev_num+1) == atoi(header)){
-            if (corruption(temp)) {
-                prev_num = acknowledge(header, their_addr, addr_len);
-            }
-        } else if (prev_num == atoi(header)) {
-            printf("Received retransmission: %s\n", temp);
+        if (corruption(temp)) {
             acknowledge(header, their_addr, addr_len);
-        } else {
-            printf("Received out of order: %s\n", temp);
         }
         free(temp);
     }
 }
 
-int main(int argc, cahr **argv)
+int main(int argc, char **argv)
 {
 	int rv, yes=1;
 	struct addrinfo hints, *servinfo, *p;
@@ -88,9 +81,8 @@ int main(int argc, cahr **argv)
 
     if (argc > 1)
         packet_loss = atoi(argv[1]);
-
-    if (packet_loss > 1.0)
-        packet_loss = 1/packet_loss;
+        if (packet_loss > 1.0)
+            packet_loss = 1/packet_loss;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
@@ -150,8 +142,6 @@ int main(int argc, cahr **argv)
 
 
 
-
-
 // get sockaddr, IPv4 or IPv6:
 //void *get_in_addr(struct sockaddr *sa)
 //{
@@ -177,7 +167,5 @@ int main(int argc, cahr **argv)
 //        }
 //        printf("receiver: got packet from %s\n",
 //               inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *) &their_addr), s, sizeof s));
-
-
 
 
