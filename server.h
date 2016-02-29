@@ -22,8 +22,8 @@
 #include <signal.h>
 #include <pthread.h>
 
-#define PORT "31950"	// the port users will be connecting to
-#define WINDOW_SIZE 5 // the port users will be connecting to
-#define MAXBUFLEN 100
+#define PORT "31950"	/* the port users will be connecting to */
+#define WINDOW_SIZE 5   /* the port users will be connecting to */
+#define MAXBUFLEN 1000
 
-#endif //CMPT434_SERVER_H
+#endif /* CMPT434_SERVER_H */

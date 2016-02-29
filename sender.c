@@ -38,9 +38,10 @@ char *readFromMessageQueue(){
 }
 
 void addToMessageQueue(char *text){
-    pthread_mutex_lock(&queue_mutex);
+    struct message_queue *queue, *current;
 
-    struct message_queue *queue, *current = MessageQueue;
+    pthread_mutex_lock(&queue_mutex);
+    current = MessageQueue;
     queue = (struct message_queue *) malloc(sizeof(struct message_queue));
     queue->text = malloc(strlen(text) * sizeof(char));
     snprintf(queue->text, strlen(text), "%s", text);
@@ -74,7 +75,7 @@ void *sendMessage(void *args) {
             exit(1);
         }
 
-        //  Wait for ack from receiver based on value->sequence_num
+        /* Wait for ack from receiver based on value->sequence_num */
         addr_len = sizeof their_addr;
         if (recvfrom(sock_fd, buf, MAXBUFLEN - 1, 0, (struct sockaddr *) &their_addr, &addr_len) > 0) {
             temp = malloc(strlen(buf) * sizeof(char));
@@ -94,8 +95,6 @@ void *sendMessage(void *args) {
     pthread_exit(NULL);
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-noreturn"
 void *sendMessagesLoop(void *_) {
     while (1) {
         if (queue_size <= 0) {
@@ -119,7 +118,7 @@ void *sendMessagesLoop(void *_) {
     }
     pthread_exit(NULL);
 }
-#pragma clang diagnostic pop
+
 
 void runSender(){
     char *text=NULL;
@@ -137,6 +136,8 @@ void runSender(){
 int main(int argc, char *argv[]) {
 
     struct addrinfo hints, *server_info, *p;
+    struct timeval tv;
+    pthread_t send_thread;
     char *host = "127.0.0.1", *port = PORT;
     int rv;
 
@@ -161,7 +162,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // loop through all the results and make a socket
+    /* loop through all the results and make a socket */
     for(p = server_info; p != NULL; p = p->ai_next) {
         if ((sock_fd = socket(p->ai_family, p->ai_socktype,
                               p->ai_protocol)) == -1) {
@@ -169,7 +170,6 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        struct timeval tv;
         tv.tv_sec = timeout;
         tv.tv_usec = 0;
         if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, &tv , sizeof(tv))  == -1) {
@@ -190,7 +190,6 @@ int main(int argc, char *argv[]) {
     ai_addr = p->ai_addr; /* binary address */
     ai_addrlen = p->ai_addrlen;	/* length of ai_addr */
 
-    pthread_t send_thread;
     if (0 != pthread_cond_init(&cond, NULL)){
         perror("init cond");
         exit(1);

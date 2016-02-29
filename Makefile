@@ -26,6 +26,7 @@ KILL:
 
 run_receiver: Receiver
 	./Receiver
+#	./Receiver 5
 
 Receiver: receiver.c
 	$(CC) $(CCFLAGS) -o Receiver receiver.c
