@@ -31,9 +31,9 @@ char *readFromMessageQueue(){
 }
 
 void addToMessageQueue(char *text) {
-    pthread_mutex_lock(&queue_mutex);
+    struct message_queue *queue, *current=MessageQueue;
 
-    struct message_queue *queue, *current = MessageQueue;
+    pthread_mutex_lock(&queue_mutex);
     queue = (struct message_queue *) malloc(sizeof(struct message_queue));
     queue->text = malloc(strlen(text) * sizeof(char));
     snprintf(queue->text, strlen(text), "%s", text);
@@ -109,7 +109,8 @@ void *sendMessagesLoop(void *_) {
             values->text = text;
             values->sequence_num = sequence;
             sender_count++;
-            sequence = ++sequence % MAXSEQUENCE;
+	    sequence++;
+            sequence = sequence % MAXSEQUENCE;
             if (pthread_create(&thread, NULL, sendMessage, values) == -1) {
                 addToMessageQueue(text);
                 sender_count--;
@@ -135,6 +136,7 @@ void runSender(){
 
 int main(int argc, char *argv[]) {
 
+    pthread_t send_thread;
     struct addrinfo hints, *server_info, *p;
     char *host = "127.0.0.1", *port = PORT;
     int rv;
@@ -162,7 +164,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // loop through all the results and make a socket
+    /* loop through all the results and make a socket */
     for(p = server_info; p != NULL; p = p->ai_next) {
         if ((sock_fd = socket(p->ai_family, p->ai_socktype,
                               p->ai_protocol)) == -1) {
@@ -188,7 +190,6 @@ int main(int argc, char *argv[]) {
     ai_addr = p->ai_addr; /* binary address */
     ai_addrlen = p->ai_addrlen;	/* length of ai_addr */
 
-    pthread_t send_thread;
     if (0 != pthread_cond_init(&cond, NULL)){
         perror("init cond");
         exit(1);

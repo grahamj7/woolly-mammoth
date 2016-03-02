@@ -33,9 +33,9 @@ struct message_queue{
     struct message_queue *next;
 };
 
-#define PORT "31950"	// the port users will be connecting to
-#define WINDOW_SIZE 5 // the port users will be connecting to
+#define PORT "31950"	/* the port users will be connecting to */
+#define WINDOW_SIZE 5 /* the port users will be connecting to */
 #define MAXBUFLEN 1000
 #define MAXSEQUENCE 256
 
-#endif //CMPT434_SERVER_H
+#endif /* CMPT434_SERVER_H */
