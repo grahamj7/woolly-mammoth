@@ -7,8 +7,9 @@
  */
 #include "server.h"
 
-int sock_fd=-1, acks=0;
+int sock_fd=-1, acks=0, r_max=254;
 double packet_loss=1.0;
+char **MessageBuffer;
 
 void sigchld_handler(int s)
 {
@@ -27,8 +28,7 @@ int corruption(char *temp) {
     printf("Received: %s, Correct? ", temp);
     fflush(stdout);
     getline(&text, &len, stdin);
-    printf("After: %s\n", text);
-    val = 'Y' == *text;
+    val = 'Y' == *text || 'y' == *text;
     free(text);
     return val;
 }
@@ -47,15 +47,38 @@ int acknowledge(char *num, struct sockaddr_storage their_addr, socklen_t addr_le
     return atoi(num);
 }
 
+int checkBuffer(int prev_seq, struct sockaddr_storage their_addr, socklen_t addr_len) {
+    char *text=NULL, *temp, *header;
+
+    for (int i=0; i < r_max; i++) {
+        text = MessageBuffer[i];
+        MessageBuffer[i] = NULL;
+        if (text == NULL)
+            continue;
+        temp = malloc(strlen(text) * sizeof(char));
+        strcpy(temp, text);
+        header = strtok(text, ":");
+        if ((prev_seq+1)%MAXSEQUENCE == atoi(header)) {
+            if (corruption(temp)) {
+                prev_seq = acknowledge(header, their_addr, addr_len);
+                free(temp);
+            }
+        } else
+            MessageBuffer[i] = temp;
+        free(text);
+    }
+    return prev_seq;
+}
+
 void runReceiver() {
     char buf[MAXBUFLEN], *pos, *temp, *header;
-
+    int prev_num = -1;
     struct sockaddr_storage their_addr; /* connector's address information */
     socklen_t addr_len;
 
     while (1) {
         addr_len = sizeof their_addr;
-        if (recvfrom(sock_fd, buf, MAXBUFLEN - 1, 0, (struct sockaddr *) &their_addr, &addr_len) == -1) {
+        if (recvfrom(sock_fd, buf, MAXBUFLEN-1, 0, (struct sockaddr *) &their_addr, &addr_len) == -1) {
             perror("recvfrom");
             exit(1);
         }
@@ -65,11 +88,20 @@ void runReceiver() {
         temp = malloc(strlen(buf) * sizeof(char));
         strcpy(temp, buf);
         header = strtok(buf, ":");
-
-        if (corruption(temp)) {
-            acknowledge(header, their_addr, addr_len);
+        if ((prev_num+1)%MAXSEQUENCE == atoi(header)) {
+            if (corruption(temp)) {
+                prev_num = acknowledge(header, their_addr, addr_len);
+                prev_num = checkBuffer(prev_num, their_addr, addr_len);
+            }
+            free(temp);
         }
-        free(temp);
+        else {
+            if (prev_num >= atoi(header)) {
+                acknowledge(header, their_addr, addr_len);
+                continue;
+            }
+            MessageBuffer[atoi(header)%r_max] = temp;
+        }
     }
 }
 
@@ -83,7 +115,10 @@ int main(int argc, char **argv)
         packet_loss = atoi(argv[1]);
         if (packet_loss > 1.0)
             packet_loss = 1/packet_loss;
+    if (argc > 2)
+        r_max = atoi(argv[2]);
 
+    MessageBuffer = malloc(MAXBUFLEN*r_max* sizeof(char));
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
     hints.ai_socktype = SOCK_DGRAM;
@@ -139,33 +174,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-
-
-
-// get sockaddr, IPv4 or IPv6:
-//void *get_in_addr(struct sockaddr *sa)
-//{
-//	if (sa->sa_family == AF_INET) {
-//		return &(((struct sockaddr_in*)sa)->sin_addr);
-//	}
-//
-//	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-//}
-
-
-
-//        token = strtok(NULL, ":");
-//        while (token != NULL) {
-//            temp = malloc (strlen(token) * sizeof(char));
-//            if (count == 0)
-//                snprintf(temp, strlen(token)+strlen(message)+1, "%s%s", message, token);
-//            else
-//                snprintf(temp, strlen(token)+strlen(message)+2, "%s:%s", message, token);
-//            message = temp;
-//            token = strtok(NULL, ":");
-//            count++;
-//        }
-//        printf("receiver: got packet from %s\n",
-//               inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *) &their_addr), s, sizeof s));
-
-
