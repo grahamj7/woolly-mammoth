@@ -69,7 +69,6 @@ void *sendMessage(void *args) {
 
     sprintf(buffer, "%d:%s", values->sequence_num, values->text);
     while (1) {
-        printf("Send: %s\n", buffer);
         if (sendto(sock_fd, buffer, strlen(buffer) + 1, 0, ai_addr, ai_addrlen) == -1) {
             perror("sender: sendto");
             exit(1);
@@ -87,7 +86,7 @@ void *sendMessage(void *args) {
             free(temp);
         }
     }
-    printf("Done:%s\n", buffer);
+
     free(values->text);
     free(values);
     free(buffer);
@@ -126,7 +125,7 @@ void runSender(){
 
     while (getline(&text, &len, stdin) != -1) {
         if (strcmp(text, "\n") == 0) {
-            printf("Empty\n");
+            printf("Empty Line\n");
             continue;
         }
         addToMessageQueue(text);
@@ -216,29 +215,21 @@ int main(int argc, char *argv[]) {
 
 
     /* Cleanup */
-    printf("Join Thread\n");
     if (pthread_join(send_thread, NULL) == -1){
         perror("join pthread");
         return -1;
     }
-    printf("Done\n");
 
     freeaddrinfo(server_info);
     close(sock_fd);
-    printf("Closed\n");
-    fflush(stdout);
-
-    printf("Destroy Cond\n");
     if (pthread_cond_destroy(&cond)) {
         perror("destroy cond");
         exit(1);
     }
-    printf("Destroy Q_Mutex\n");
     if (pthread_mutex_destroy(&queue_mutex)) {
         perror("destroy queue_mutex");
         exit(1);
     }
-    printf("Destroy W_Mutex\n");
     if (pthread_mutex_destroy(&window_mutex)) {
         perror("destroy window_mutex");
         exit(1);
@@ -246,67 +237,3 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-/*
-void *sendMessageLoop(void *args){
-    struct message *values = args;
-    char *buffer, buf[MAXBUFLEN];
-    struct sockaddr_storage their_addr;  // connector's address information
-    socklen_t addr_len;
-
-    buffer = malloc ((strlen(values->sequence_num)+strlen(values->text)) * sizeof(char));
-    snprintf(buffer, strlen(values->sequence_num)+strlen(values->text)+2, "%d:%s", values->sequence_num, values->text);
-
-    while(1) {
-        if (sendto(sock_fd, buffer, strlen(buffer)+1, 0,
-                   ai_addr, ai_addrlen) == -1) {
-            perror("sender: sendto");
-            exit(1);
-        }
-
-        //  Wait for ack from receiver based on value->sequence_num
-        addr_len = sizeof their_addr;
-        if (recvfrom(sock_fd, buf, MAXBUFLEN - 1, 0, (struct sockaddr *) &their_addr, &addr_len) == -1) {
-            continue;
-        } else {
-            strtok(buf, ":");
-            char *token = strtok(NULL, ":");
-            if (strcmp(token, values->sequence_num) == 0) {
-                break;
-            }
-        }
-    }
-    free (buffer);
-    free (values->text);
-    free (values);
-    sender_count--;
-    pthread_exit(NULL);
-}
-
-void *sendMessages(void *args){
-    pthread_t sendMessageThread;
-    struct message *value;
-    char *text;
-    while(loop || queue_size > 0) {
-        while(queue_size <= 0)	{
-            pthread_cond_wait(&cond, &queue_mutex);
-        }
-
-        pthread_mutex_lock(&window_mutex);
-        if (sender_count < window_size-2) {
-            text = readFromMessageQueue();
-            value = malloc (sizeof(struct message));
-            value->text = text;
-            value->sequence_num = malloc (sizeof(sender_count));
-            sprintf(value->sequence_num, "%d", sender_count);
-            sender_count++;
-            if (pthread_create(&sendMessageThread, NULL, sendMessageLoop, value) == -1) {
-                perror("start pthread");
-                addToMessageQueue(text);
-                sender_count--;
-            }
-        }
-        pthread_mutex_unlock(&window_mutex);
-    }
-    pthread_exit(NULL);
-}
-*/
