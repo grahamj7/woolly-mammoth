@@ -148,36 +148,3 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-
-
-
-/*
-// get sockaddr, IPv4 or IPv6:
-//void *get_in_addr(struct sockaddr *sa)
-//{
-//	if (sa->sa_family == AF_INET) {
-//		return &(((struct sockaddr_in*)sa)->sin_addr);
-//	}
-//
-//	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-//}
-
-
-
-//        token = strtok(NULL, ":");
-//        while (token != NULL) {
-//            temp = malloc (strlen(token) * sizeof(char));
-//            if (count == 0)
-//                snprintf(temp, strlen(token)+strlen(message)+1, "%s%s", message, token);
-//            else
-//                snprintf(temp, strlen(token)+strlen(message)+2, "%s:%s", message, token);
-//            message = temp;
-//            token = strtok(NULL, ":");
-//            count++;
-//        }
-//        printf("receiver: got packet from %s\n",
-//               inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *) &their_addr), s, sizeof s));
-
-*/
-
-

@@ -221,10 +221,12 @@ int main(int argc, char *argv[]) {
         perror("join pthread");
         return -1;
     }
+    printf("Done\n");
 
     freeaddrinfo(server_info);
-
     close(sock_fd);
+    printf("Closed\n");
+    fflush(stdout);
 
     printf("Destroy Cond\n");
     if (pthread_cond_destroy(&cond)) {
