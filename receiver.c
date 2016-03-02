@@ -26,7 +26,7 @@ int corruption(char *temp) {
     int val;
     printf("Received: %s, Correct? ", temp);
     getline(&text, &len, stdin);
-    val = 'Y' == *text;
+    val = 'Y' == *text || 'y' == *text;
     free(text);
     return val;
 }
@@ -65,8 +65,7 @@ void runReceiver() {
         strcpy(temp, buf);
         header = strtok(buf, ":");
 
-        printf("Got: %s, Expected: %d, %d\n", header, (prev_num+1), (prev_num+1) == atoi(header));
-        if ((prev_num+1) == atoi(header)){
+        if ((prev_num+1)%MAXSEQUENCE == atoi(header)){
             if (corruption(temp)) {
                 prev_num = acknowledge(header, their_addr, addr_len);
             }
@@ -147,4 +146,3 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-

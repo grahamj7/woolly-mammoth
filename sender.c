@@ -24,6 +24,7 @@ struct message_queue *MessageQueue;
 int sock_fd=-1, queue_size=0, window_size=WINDOW_SIZE, timeout=60, sender_count=0, sequence=0;
 struct	sockaddr *ai_addr;
 socklen_t ai_addrlen;
+struct timeval tv_timeout;
 
 char *readFromMessageQueue(){
     struct message_queue *temp=MessageQueue;
@@ -57,7 +58,8 @@ void addToMessageQueue(char *text){
     }
 
     queue_size++;
-    pthread_cond_signal(&cond);
+    if (queue_size >= window_size)
+        pthread_cond_signal(&cond);
     pthread_mutex_unlock(&queue_mutex);
 }
 
@@ -95,19 +97,27 @@ void *sendMessage(void *args) {
 }
 
 void *sendMessagesLoop(void *_) {
+    struct timeval now;
+    struct timespec timeToWait;
+    char *text;
+    struct message *values;
+    pthread_t thread;
+
     while (1) {
-        if (queue_size <= 0) {
-            pthread_cond_wait(&cond, &queue_mutex);
-        }
+        gettimeofday(&now, NULL);
+        timeToWait.tv_sec = now.tv_sec+tv_timeout.tv_sec;
+        timeToWait.tv_nsec = now.tv_usec+tv_timeout.tv_usec;
+
+        pthread_cond_timedwait(&cond, &queue_mutex, &timeToWait);
         pthread_mutex_lock(&window_mutex);
         if (sender_count <= window_size-2) {
-            char *text = readFromMessageQueue();
-            pthread_t thread;
-            struct message *values = malloc(sizeof(struct message));
+            text = readFromMessageQueue();
+            values = malloc(sizeof(struct message));
             values->text = text;
             values->sequence_num = sequence;
             sender_count++;
             sequence++;
+            sequence = sequence % MAXSEQUENCE;
             if (pthread_create(&thread, NULL, sendMessage, values) == -1) {
                 addToMessageQueue(text);
                 sender_count--;
@@ -135,7 +145,6 @@ void runSender(){
 int main(int argc, char *argv[]) {
 
     struct addrinfo hints, *server_info, *p;
-    struct timeval tv;
     pthread_t send_thread;
     char *host = "127.0.0.1", *port = PORT;
     int rv;
@@ -169,9 +178,9 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        tv.tv_sec = timeout;
-        tv.tv_usec = 0;
-        if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, &tv , sizeof(tv))  == -1) {
+        tv_timeout.tv_sec = timeout;
+        tv_timeout.tv_usec = 0;
+        if (setsockopt(sock_fd, SOL_SOCKET, SO_RCVTIMEO, &tv_timeout , sizeof(tv_timeout))  == -1) {
             perror("setsockopt: rcvtimeout");
             continue;
         }
