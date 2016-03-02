@@ -1,5 +1,5 @@
 CMPT 434 - Winter 2016
-Assignment 2, Question 1
+Assignment 2, Question 2
 
 Jordaen Graham - jhg257
 
@@ -21,8 +21,12 @@ server.h
 
 How to run:
 To compile the UDP Server
-  make Server
+  make Sender
+  
+To compile the Receiver
+  make Receiver
 
-To run the server and proxy:
-  ./Server
+To run the Sender and Receiver:
+  ./Sender [arguments]
+  ./Receiver [arguments]
 
