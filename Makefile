@@ -6,35 +6,21 @@
 # File: Makefile
 
 CC := gcc
-CCFLAGS := -Wall -Wextra -pedantic -pthread -g
+CCFLAGS := -std=gnu99 -Wall -Wextra -pedantic -pthread -g
 
-all: clean Receiver Sender
+all: clean RUN
 
 clean:
 	@rm *.o* &> /dev/null || true
 	@rm *~ &> /dev/null || true
-	@rm Receiver &> /dev/null || true
-	@rm Sender &> /dev/null || true
+	@rm Server &> /dev/null || true
 
-RUN: Receiver
-	./Receiver &
-	./Sender &
+RUN: Server
+	./Server
 
 KILL:
-	@kill -9 `ps | grep Receiver | cut -d" " -f1` &> /dev/null ;\
-	@kill -9 `ps | grep Sender | cut -d" " -f1` &> /dev/null ;\
+	@kill -9 `ps | grep Server | cut -d" " -f1` &> /dev/null ; true
+	@kill -9 `ps | grep CMPT434 | cut -d" " -f1` &> /dev/null ; true
 
-run_receiver: Receiver
-	./Receiver
-
-Receiver: receiver.c
-	$(CC) $(CCFLAGS) -o Receiver receiver.c
-
-run_sender: Sender
-	./Sender
-#	./Sender 127.0.0.1 3950 20 10
-
-Sender: sender.c
-	$(CC) $(CCFLAGS) -o Sender sender.c
-
-
+Server: server.c
+	$(CC) $(CCFLAGS) -o Server server.c barrier.c

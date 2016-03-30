@@ -10,32 +10,40 @@
 #ifndef CMPT434_SERVER_H
 #define CMPT434_SERVER_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <signal.h>
 #include <pthread.h>
-#include <sys/time.h>
+#include <sys/mman.h>
+#include <math.h>
+#include "barrier.h"
 
-struct message{
-    char *text;
-    int sequence_num;
+#define STARTPORT "31000"	/* the port users will be connecting to */
+#define NumTags 3
+#define GridSize 1001
+#define BUFFSIZE 100
+
+#define min(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a < _b ? _a : _b; })
+
+int Dist=5, NumSteps=1, Range=500, Packets=5, Output=0;
+
+struct packet_buffer {
+    char* packet;
+    struct packet_buffer *next;
 };
 
-struct message_queue{
-    char *text;
-    struct message_queue *next;
+struct nodes {
+    int id, x, y, p_sockets[NumTags], count_packets;   /* Listens for clients acts as server*/
+    char *name, *port, *p_ports[NumTags];
+    struct packet_buffer *packets;
 };
 
-#define PORT "31950"	/* the port users will be connecting to */
-#define WINDOW_SIZE 5 /* the port users will be connecting to */
-#define MAXBUFLEN 1000
-#define MAXSEQUENCE 256
+struct both {
+    int socket;
+    struct nodes *tag;
+} *both1[NumTags];
+
+static struct nodes *baseStation, **animal_tags;
+
 
 #endif /* CMPT434_SERVER_H */
