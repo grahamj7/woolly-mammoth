@@ -1,5 +1,5 @@
 # CMPT 434 - Winter 2016
-# Assignment 2, Question 1
+# Assignment 3, Question 1
 #
 # Jordaen Graham - jhg257
 #
@@ -16,10 +16,10 @@ clean:
 	@rm Server &> /dev/null || true
 
 RUN: Server
-	./Server
+	./Server 1 15 400 10 0
 
 KILL:
-	@kill -9 `ps | grep Server | cut -d" " -f1` &> /dev/null ; true
+	@kill -9 `ps | grep \./Server | cut -d" " -f1` &> /dev/null ; true
 	@kill -9 `ps | grep CMPT434 | cut -d" " -f1` &> /dev/null ; true
 
 Server: server.c

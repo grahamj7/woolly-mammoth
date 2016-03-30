@@ -114,13 +114,14 @@ int sendMessage(int i, struct nodes *tag) {
 }
 
 void sendPackets(struct nodes *tag) {
-    struct packet_buffer *cursor = tag->packets;
+    struct packet_buffer *cursor = tag->packets, *prev;
     char *message=malloc(sizeof(char)*(BUFFSIZE)), *buffer;
     int socket, count=0;
 
     socket = connect_to_server(tag->port);
 
     while(cursor != NULL) {
+        prev = cursor;
         if (tag->numRemaining <= 0) break;
         sprintf(message, "%s{%d=%s}", message, cursor->id, cursor->packet);
         tag->delete[cursor->id] = 1;
@@ -129,7 +130,12 @@ void sendPackets(struct nodes *tag) {
 
         tag->numRemaining--;
         count++;
-        cursor = cursor->next;
+
+        prev->next = cursor->next;
+        free(cursor->packet);
+        free(cursor);
+
+        cursor = prev->next;
     }
 
     buffer = malloc(sizeof(char)*(strlen(message)+3));
@@ -382,7 +388,6 @@ void recv_packets(int id) {
         return;
     }
 
-    fflush(stdout);
     if ((numbytes = recv(clientSocket, buffer, BUFFSIZE, 0)) == -1) {
         perror("recv");
         exit(2);
@@ -398,6 +403,7 @@ void recv_packets(int id) {
     temp_data=strtok(data, "{");
 
     while ( (temp_data = strtok(NULL, "{")) != NULL ) {
+        printf("1\n");
         test = malloc(sizeof(char)*strlen(temp_data));
         bzero(test, strlen(temp_data));
         snprintf(test, strlen(temp_data), "%s", temp_data);
@@ -473,12 +479,6 @@ void run_baseStation() {
             pthread_join(baseThread[i], NULL);
         }
     }
-
-
-//    if Output, print everytime a packet is received
-//    count the number of packets received
-
-//    end; print count
 }
 
 int main(int argc, char *argv[]) {
@@ -486,7 +486,7 @@ int main(int argc, char *argv[]) {
     /* Get command line args */
 
     if(argc < 6) {
-        printf("\nusage: ./delayTolerant <Steps> <Distance> <Range> <Packets> <Output>\n");
+        printf("\nusage: ./Server <Steps> <Distance> <Range> <Packets> <Output>\n");
         return 1;
     }
     NumSteps = atoi(argv[1]);

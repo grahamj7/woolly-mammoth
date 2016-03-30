@@ -6,4 +6,83 @@ Jordaen Graham - jhg257
 File: Design.txt
 ========================================
 
+The server initializes all animals tags and the base station
+- assigns each animal a socket for each other animal and the base station to make for easier communication
+Spins up new processes for each animal
 
+each process now starts up a thread to listen for incoming communications from other animals
+the base station also starts up a thread to listen for animals
+
+each animal now moves to it's new location
+Then sends it's message to all animals and the baseStation,
+  the packet ids it already has
+  and any packet ids to be deleted(that have already been delivery to the base station)
+
+when a message is received by an animal,
+  if there are any values in the 'delete' field those ids are
+    removed from the receiver's packet_list
+  the receiver then evaluates if the 2 animals
+  are in range of each other, and if they are then it also checks
+    if the sender is closer to the base station,
+      if it is then it collects it's packets and checks that the sender
+      doesn't already have that packet (from the 'has' field of the message)
+        then sends them back to the sender
+
+once the sender sends it's initial message to the receiver, it waits for a response
+  if the nodes are in range, it gathers the data-packets from the message and
+    adds them to its own packet_list
+
+when the base station receives a message and it is in range with an animal,
+  it sends back a message telling the sender to transmit all of it's packets
+  the base station then waits for all the data packets from the sender
+
+when an animal receives a message from the base station, telling it to transmit
+  it gathers all of its packets and transmits them to the base station,
+    it then removes all of the packets from its own list
+    (so it doesn't retransmit them), and adds them to it delete list so it can
+    tell other animals that those packets have been delivered and and can be deleted
+
+when the base station receives a new packet, it adds it to it's own packet_list
+  and increases its packet_count
+
+
+Failures:
+  The program has a tendancy to freeze/deadlock
+  I don't know where or how this is happening, but I believe it to be
+    occurring when it tries to close a socket, or possibly it may be trying to
+    receive a message that doesn't arrive
+
+  This problem seems to increase in likely hood with more animals and steps occurring
+
+  if you're having trouble running the program try it with NumTags=3 NumSteps=1
+  and it usually works (Though sometimes it still locks)
+
+  Another error that seldomly happens is in baseListener it may hit an allocation error
+    I have no idea why this error happens as everything should be allocated properly
+    It appears to be utterly random and infuriating
+
+
+Here's an easter bunny and happy marking :)
+
+      __            /^\
+    .'  \          / :.\
+   /     \         | :: \
+  /   /.  \       / ::: |
+ |    |::. \     / :::'/
+ |   / \::. |   / :::'/
+ `--`   \'  `~~~ ':'/`
+         /         (
+        /   0 _ 0   \
+      \/     \_/     \/
+    -== '.'   |   '.' ==-
+      /\    '-^-'    /\
+        \   _   _   /
+       .-`-((\o/))-`-.
+  _   /     //^\\     \   _
+."o".(    , .:::. ,    )."o".
+|o  o\\    \:::::/    //o  o|
+ \    \\   |:::::|   //    /
+  \    \\__/:::::\__//    /
+   \ .:.\  `':::'`  /.:. /
+    \':: |_       _| ::'/
+     `---` `"""""` `---`

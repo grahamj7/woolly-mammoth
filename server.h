@@ -16,7 +16,7 @@
 #include "connections.h"
 
 #define STARTPORT "31000"	/* the port users will be connecting to */
-#define NumTags 10
+#define NumTags 3
 #define GridSize 1001
 #define BUFFSIZE 1000
 
