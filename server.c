@@ -454,7 +454,7 @@ int main(int argc, char *argv[]) {
 //    Output = atoi(argv[5]);
     Delta = Range/10;
 
-    srand(NULL);
+    srand((unsigned int) time(NULL));
     /* Create BaseStation */
     baseStation = malloc(sizeof(struct nodes));
     baseStation->id = -1;
