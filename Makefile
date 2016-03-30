@@ -23,4 +23,4 @@ KILL:
 	@kill -9 `ps | grep CMPT434 | cut -d" " -f1` &> /dev/null ; true
 
 Server: server.c
-	$(CC) $(CCFLAGS) -lm -o Server server.c barrier.c
+	$(CC) $(CCFLAGS) -lm -o Server server.c barrier.c &> /dev/null
