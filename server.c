@@ -383,6 +383,8 @@ void recv_packets(int id) {
         sprintf(new_packet->packet, "%s\0", packet);
         if (baseStation->packets != NULL) { new_packet->next = baseStation->packets; }
         baseStation->packets = new_packet;
+        baseStation->packet_count += 1;
+
         if (Output == 0)
             printf("Output 0 Received {%s} from %d \n", new_packet->packet, new_packet->id+1);
 
@@ -471,6 +473,7 @@ int main(int argc, char *argv[]) {
     baseStation->name = "N00";
     baseStation->x = (GridSize-1)/2;
     baseStation->y = (GridSize-1)/2;
+    baseStation->packet_count=0;
     baseStation->port = malloc(sizeof(char)*10);
     sprintf(baseStation->port, "%d", atoi(port)+1500);
     for(int i=0; i < NumTags; i++){
@@ -531,6 +534,7 @@ int main(int argc, char *argv[]) {
 
     while ((wait(NULL)) > 0);
 
+    printf("\tFinished\nThe Base Station collected %d packets\n", baseStation->packet_count);
     /* Cleanup */
     for(int j=0; j<NumTags; j++) {
         close(baseStation->p_sockets[j]);

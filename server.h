@@ -29,7 +29,7 @@ struct packet_buffer {
 };
 
 struct nodes {
-    int id, x, y, p_sockets[NumTags], has[NumTags], numRemaining, my_socket;
+    int id, x, y, p_sockets[NumTags], has[NumTags], numRemaining, my_socket, packet_count;
     char *name, *port, *p_ports[NumTags];
     struct packet_buffer *packets;
 };
