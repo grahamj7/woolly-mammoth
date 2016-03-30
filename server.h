@@ -20,7 +20,7 @@
 #define GridSize 1001
 #define BUFFSIZE 1000
 
-int Dist=5, NumSteps=1, Range=500, Packets=5, Output=0, Delta;
+int Dist=5, NumSteps=1, Range=400, Packets=5, Output=0, Delta;
 
 struct packet_buffer {
     char* packet;

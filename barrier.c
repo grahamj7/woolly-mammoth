@@ -73,6 +73,7 @@ int getConnections(int *serverSocket) {
     clientSocket = accept(*serverSocket, (struct sockaddr *)&their_addr, &sin_size);
     if (clientSocket == -1) {
         perror("accept");
+        fprintf(stderr, "Socket: %d_%d\n", *serverSocket, clientSocket);
         return clientSocket;
     }
 
