@@ -18,22 +18,18 @@
 #define STARTPORT "31000"	/* the port users will be connecting to */
 #define NumTags 3
 #define GridSize 1001
-#define BUFFSIZE 100
+#define BUFFSIZE 1000
 
-#define min(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
-
-int Dist=5, NumSteps=1, Range=500, Packets=5, Output=0;
+int Dist=5, NumSteps=1, Range=500, Packets=5, Output=0, Delta;
 
 struct packet_buffer {
     char* packet;
+    int id;
     struct packet_buffer *next;
 };
 
 struct nodes {
-    int id, x, y, p_sockets[NumTags], count_packets;   /* Listens for clients acts as server*/
+    int id, x, y, p_sockets[NumTags], has[NumTags], numRemaining;
     char *name, *port, *p_ports[NumTags];
     struct packet_buffer *packets;
 };
