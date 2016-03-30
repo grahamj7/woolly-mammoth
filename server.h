@@ -13,7 +13,7 @@
 #include <pthread.h>
 #include <sys/mman.h>
 #include <math.h>
-#include "barrier.h"
+#include "connections.h"
 
 #define STARTPORT "31000"	/* the port users will be connecting to */
 #define NumTags 3

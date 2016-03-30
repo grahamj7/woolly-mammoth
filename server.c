@@ -358,7 +358,7 @@ void recv_packets(int id) {
     strtok(buffer, "#");
 
     temp_data=malloc(sizeof(char)*numbytes);
-    temp_data = strtok(data, "{");
+    temp_data=strtok(data, "{");
 
     while ( (temp_data = strtok(NULL, "{")) != NULL ) {
         test = malloc(sizeof(char)*strlen(temp_data));
