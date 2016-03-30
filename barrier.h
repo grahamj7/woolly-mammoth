@@ -13,7 +13,7 @@
 #include <signal.h>
 
 int connect_to_server(char *);
-int getConnections(int*);
+int getConnections(int);
 int initializeSocket(const char *);
 
 #endif //CMPT434_BARRIER_H

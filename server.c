@@ -103,8 +103,7 @@ int sendMessage(int i, struct nodes *tag) {
         if (tag->has[j]==1)
             sprintf(has, "%s,%d", has, j);
 
-    sprintf(message,"|-1|%s|%d|%d|%d|%d|{%s}|\0", tag->name, tag->id, tag->x, tag->y, i, has);
-    printf("Send: %s -> %s\n", animal_tags[i]->p_ports[tag->id], message);
+    sprintf(message,"|%s|%d|%d|%d|%d|{%s}|\0", tag->name, tag->id, tag->x, tag->y, i, has);
     if (send(socket, message, strlen(message)+1, 0) == -1)
         fprintf(stdout, "sendMessage Error: sending to %d\n", socket);
     free(has);
@@ -113,7 +112,29 @@ int sendMessage(int i, struct nodes *tag) {
 }
 
 void sendPackets(struct nodes *tag) {
-    printf("Send Packets: %d -> B\n", tag->id);
+    struct packet_buffer *cursor = tag->packets;
+    char *message=malloc(sizeof(char)*(BUFFSIZE)), *buffer;
+    int socket, count=0;
+
+    socket = connect_to_server(tag->port);
+
+    while(cursor != NULL) {
+        if (tag->numRemaining <= 0) break;
+        sprintf(message, "%s{%d=%s}", message, cursor->id, cursor->packet);
+        tag->numRemaining--;
+        count++;
+        cursor = cursor->next;
+    }
+
+    buffer = malloc(sizeof(char)*(strlen(message)+3));
+    sprintf(buffer, "%d#%s", count, message);
+
+    if (send(socket, buffer, strlen(buffer)+1, 0) == -1)
+        fprintf(stdout, "sendMessage Error: sending to %d\n", socket);
+    free(message);
+    free(buffer);
+
+//    TODO delete sent packets from all nodes
 }
 
 void receiveNumPackets(struct nodes *tag, int socket) {
@@ -124,7 +145,7 @@ void receiveNumPackets(struct nodes *tag, int socket) {
     free(temp);
     buffer = malloc(sizeof(char) * numbytes);
     if (recv(socket, buffer, (size_t) numbytes, 0) == -1) {
-        printf("recv error");
+        perror("recv error");
         exit(1);
     }
     type = atoi(strtok(buffer, "|"));
@@ -140,10 +161,10 @@ void receiveNumPackets(struct nodes *tag, int socket) {
 
     int id, j=0;
     char *data, *data_list[packets], *temp_data;
+
     temp_data=malloc(sizeof(char)*numbytes);
-
-
     temp_data = strtok(data_packet, "{");
+
     while ( temp_data != NULL) {
         data_list[j] = malloc(sizeof(char)*strlen(temp_data));
         snprintf(data_list[j], strlen(temp_data), "%s", temp_data);
@@ -245,14 +266,14 @@ void response(int type, int client_fd, int id, struct nodes *tag, char *has) {
 void *listenerThread(void *args) {
     struct both *both1 = (struct both*)args;
     struct nodes *tag = both1->tag;
-    int *my_socket = &both1->socket, dstID, srcID, srcX, srcY, type;
+    int my_socket = both1->socket, dstID, srcID, srcX, srcY;
     char *buffer = malloc(sizeof(char)*BUFFSIZE);
     char *srcName = malloc(sizeof(char)*BUFFSIZE);
     char *srcHas= malloc(sizeof(char)*BUFFSIZE);
 
     int clientSocket = getConnections(my_socket);
     if (clientSocket == -1) {
-        close(*my_socket);
+        close(my_socket);
         return (void*)-1;
     }
 
@@ -263,7 +284,6 @@ void *listenerThread(void *args) {
     }
     buffer[numbytes] = '\0';
     strcpy(srcName, strtok(buffer,"|"));
-    type = atoi(strtok(NULL,"|"));
     srcID = atoi(strtok(NULL,"|"));
     srcX = atoi(strtok(NULL,"|"));
     srcY = atoi(strtok(NULL,"|"));
@@ -293,7 +313,6 @@ void start_simulation(struct nodes *tag_info) {
             both1[i] = malloc(sizeof(struct both));
             both1[i]->tag = tag_info;
             both1[i]->socket = tag_info->p_sockets[i];
-            printf("Listener on: %s\n", tag_info->p_ports[i]);
             pthread_create(&listen_thread, NULL, listenerThread, both1[i]);
         }
         move(tag_info);
@@ -316,49 +335,82 @@ int base_in_range(int x1, int y1) {
 
 }
 
-void base_recv(int clientSocket) {
+void recv_packets(int id) {
     ssize_t numbytes;
     char *buffer = malloc(sizeof(char)*BUFFSIZE);
-    printf("Base Wait\n");
+    int clientSocket = getConnections(animal_tags[id]->my_socket);
+
+    if (clientSocket == -1) {
+        close(animal_tags[id]->my_socket);
+        return;
+    }
+
+    fflush(stdout);
     if ((numbytes = recv(clientSocket, buffer, BUFFSIZE, 0)) == -1) {
         perror("recv");
         exit(2);
     }
     buffer[numbytes] = '\0';
-    printf("Base Done\n");
+
+    char *data, *test, *temp_data, *packet;
+    data = malloc(sizeof(char)*numbytes);
+    strcpy(data, buffer);
+    strtok(buffer, "#");
+
+    temp_data=malloc(sizeof(char)*numbytes);
+    temp_data = strtok(data, "{");
+
+    while ( (temp_data = strtok(NULL, "{")) != NULL ) {
+        test = malloc(sizeof(char)*strlen(temp_data));
+        bzero(test, strlen(temp_data));
+        snprintf(test, strlen(temp_data), "%s", temp_data);
+        test[strlen(temp_data)] = '\0';
+        id = atoi(strtok(test, "="));
+        packet = strtok(NULL, "=");
+
+        struct packet_buffer *new_packet = malloc(sizeof(struct packet_buffer));
+        new_packet->packet = malloc(sizeof(char)*18);
+        new_packet->next = NULL;
+        new_packet->id = id;
+        sprintf(new_packet->packet, "%s\0", packet);
+        if (baseStation->packets != NULL) { new_packet->next = baseStation->packets; }
+        baseStation->packets = new_packet;
+
+        free(test);
+    }
+
+    free(buffer);
+    free(data);
 }
 
 void *baseListener(void *args) {
     ssize_t numbytes;
-    int *my_socket = (int*)args, srcID, srcX, srcY, type;
+    int my_socket = *(int*)args, srcID, srcX, srcY;
     char *buffer = malloc(sizeof(char)*BUFFSIZE);
     char *srcName = malloc(sizeof(char)*BUFFSIZE);
-
     int clientSocket = getConnections(my_socket);
+
     if (clientSocket == -1) {
-        close(*my_socket);
-        return (void*)-1;
+        close(my_socket);
+        return (void *) -1;
     }
 
-    numbytes = recv(clientSocket, buffer, BUFFSIZE, MSG_PEEK);
-    if ((numbytes = recv(clientSocket, buffer, (size_t) numbytes, 0)) == -1) {
+    if ((numbytes = recv(clientSocket, buffer, BUFFSIZE, 0)) == -1) {
         perror("recv");
         exit(2);
     }
     buffer[numbytes] = '\0';
-    strcpy(srcName, strtok(buffer,"|"));
-    type = atoi(strtok(NULL,"|"));
-    srcID = atoi(strtok(NULL,"|"));
-    srcX = atoi(strtok(NULL,"|"));
-    srcY = atoi(strtok(NULL,"|"));
 
+    strcpy(srcName, strtok(buffer, "|"));
+    srcID = atoi(strtok(NULL, "|"));
+    srcX = atoi(strtok(NULL, "|"));
+    srcY = atoi(strtok(NULL, "|"));
 
     if (base_in_range(srcX, srcY)) {
-        printf("In Range\n");
+        printf("%s is in Range of the Base Station\n", srcName);
         response(-2, clientSocket, 0, NULL, NULL);
-        base_recv(clientSocket);
+        recv_packets(srcID);
     } else {
-        printf("\tNot In Range\n");
         response(-1, clientSocket, 0, NULL, NULL);
     }
 
@@ -369,22 +421,18 @@ void *baseListener(void *args) {
 }
 
 void run_baseStation() {
-    pthread_t baseThread;
+    pthread_t baseThread[NumTags];
     for (int s = 0; s < NumSteps; s++) {
         for (int i = 0; i < NumTags; i++) {
-            printf("BaseListener on: %s\n", baseStation->p_ports[i]);
-            pthread_create(&baseThread, NULL, baseListener, &baseStation->p_sockets[i]);
+            pthread_create(&baseThread[i], NULL, baseListener, &baseStation->p_sockets[i]);
         }
 
-        pthread_join(baseThread, NULL);
+        for (int i = 0; i < NumTags; i++) {
+            pthread_join(baseThread[i], NULL);
+        }
     }
 
 
-//    TODO
-//    start listeners
-//    Send message
-//    receive numPackets
-//    receive packets
 //    if Output, print everytime a packet is received
 //    count the number of packets received
 
@@ -420,7 +468,6 @@ int main(int argc, char *argv[]) {
         baseStation->p_ports[i] = malloc(sizeof(char)*10);
         sprintf(baseStation->p_ports[i], "%d", atoi(baseStation->port)+i);
         baseStation->p_sockets[i] = initializeSocket(baseStation->p_ports[i]);
-        printf("Init: B -> %d = %s_%d\n", i, baseStation->p_ports[i], baseStation->p_sockets[i]);
     }
 
     animal_tags = malloc(NumTags*sizeof(struct nodes*));
@@ -437,21 +484,20 @@ int main(int argc, char *argv[]) {
         animal_tags[i]->y = rand()%(GridSize-1);
 
         animal_tags[i]->port = malloc(sizeof(char)*10);
-        sprintf(animal_tags[i]->port, "%d", atoi(STARTPORT)+(i*100));
+        sprintf(animal_tags[i]->port, "%d", atoi(STARTPORT)+(i*100)-1);
+        animal_tags[i]->my_socket = initializeSocket(animal_tags[i]->port);
+
 
         for(int j=0; j<NumTags; j++){
             if (j == i) {
                 animal_tags[i]->has[j] = 1;
                 animal_tags[i]->p_ports[j] = baseStation->p_ports[i];
-//                animal_tags[i]->p_sockets[j] = -2;
-//                printf("Init: %d -> B = %s_%d\n", i, animal_tags[i]->p_ports[j], animal_tags[i]->p_sockets[j]);
                 continue;
             }
             animal_tags[i]->has[j] = -1;
             animal_tags[i]->p_ports[j] = malloc(sizeof(char)*10);
-            sprintf(animal_tags[i]->p_ports[j], "%d", atoi(animal_tags[i]->port)+j);
+            sprintf(animal_tags[i]->p_ports[j], "%d", atoi(animal_tags[i]->port)+j+1);
             animal_tags[i]->p_sockets[j] = initializeSocket(animal_tags[i]->p_ports[j]);
-            printf("Init: %d -> %d = %s_%d\n", i, j, animal_tags[i]->p_ports[j], animal_tags[i]->p_sockets[j]);
         }
 
         animal_tags[i]->numRemaining = Packets;

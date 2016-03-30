@@ -62,7 +62,7 @@ int connect_to_server(char *port){
 }
 
 /* Get TCP connections from other nodes */
-int getConnections(int *serverSocket) {
+int getConnections(int serverSocket) {
 
     int clientSocket;
     socklen_t sin_size;
@@ -70,10 +70,10 @@ int getConnections(int *serverSocket) {
     struct sockaddr_storage their_addr;
     sin_size = sizeof their_addr;
 
-    clientSocket = accept(*serverSocket, (struct sockaddr *)&their_addr, &sin_size);
+    clientSocket = accept(serverSocket, (struct sockaddr *)&their_addr, &sin_size);
     if (clientSocket == -1) {
         perror("accept");
-        fprintf(stderr, "Socket: %d_%d\n", *serverSocket, clientSocket);
+        fprintf(stderr, "Socket: %d_%d\n", serverSocket, clientSocket);
         return clientSocket;
     }
 
