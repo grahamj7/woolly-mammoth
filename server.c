@@ -121,6 +121,9 @@ void sendPackets(struct nodes *tag) {
     while(cursor != NULL) {
         if (tag->numRemaining <= 0) break;
         sprintf(message, "%s{%d=%s}", message, cursor->id, cursor->packet);
+        if (Output == tag->id+1)
+            printf("Output %d Transmitting {%s} to %d \n", tag->id+1, cursor->packet, 0);
+
         tag->numRemaining--;
         count++;
         cursor = cursor->next;
@@ -152,6 +155,7 @@ void receiveNumPackets(struct nodes *tag, int socket) {
     if (type == -2)
         sendPackets(tag);
 
+    int d_id = atoi(strtok(NULL, "|"));
     packets = atoi(strtok(NULL, "|"));
     data_packet = malloc(sizeof(char)*numbytes);
     strcpy(data_packet, strtok(NULL, "|"));
@@ -188,6 +192,8 @@ void receiveNumPackets(struct nodes *tag, int socket) {
         sprintf(packet->packet, "%s\0", data);
         if (tag->packets != NULL) { packet->next = tag->packets; }
         tag->packets = packet;
+        if (Output == tag->id+1)
+            printf("Output %d Received {%s} from %d \n", tag->id+1, packet->packet, d_id+1);
 
         free(data);
     }
@@ -226,7 +232,7 @@ int in_range(int srcX, int srcY, struct nodes *dst) {
     return 0;
 }
 
-void response(int type, int client_fd, int id, struct nodes *tag, char *has) {
+void response(int type, int client_fd, int id, int d_id, struct nodes *tag, char *has) {
     char *message, *temp;
     int count=0;
 
@@ -248,6 +254,8 @@ void response(int type, int client_fd, int id, struct nodes *tag, char *has) {
                 sprintf(temp, "%s{%d=%s}", temp, cursor->id, cursor->packet);
                 tag->numRemaining--;
                 count++;
+                if (Output == tag->id+1)
+                    printf("Output %d Transmitting {%s} to %d \n", tag->id+1, cursor->packet, id+1);
             }
             cursor = cursor->next;
         }
@@ -256,8 +264,8 @@ void response(int type, int client_fd, int id, struct nodes *tag, char *has) {
     } else
         temp = "Empty";
 
-    message = malloc(sizeof(char)*(8+strlen(temp)));
-    sprintf(message, "%d|%d|%s|\0", type, count, temp); // Num packets in buffer max of Packets
+    message = malloc(sizeof(char)*(12+strlen(temp)));
+    sprintf(message, "%d|%d|%d|%s|\0", type, d_id, count, temp); // Num packets in buffer max of Packets
     if (send(client_fd, message, strlen(message)+1, 0) == -1)
         fprintf(stdout, "sendMessage Error: sending to %d\n", client_fd);
     free(message);
@@ -292,9 +300,9 @@ void *listenerThread(void *args) {
 
     if (in_range(srcX, srcY, tag)) {
         printf("%s is in range of %s and %s is closer to the base\n", srcName, tag->name, srcName);
-        response(-1, clientSocket, srcID, tag, srcHas);
+        response(-1, clientSocket, srcID, tag->id, tag, srcHas);
     } else
-        response(-1, clientSocket, 0, NULL, NULL);
+        response(-1, clientSocket, 0, tag->id, NULL, NULL);
 
     free(buffer);
     free(srcName);
@@ -375,6 +383,8 @@ void recv_packets(int id) {
         sprintf(new_packet->packet, "%s\0", packet);
         if (baseStation->packets != NULL) { new_packet->next = baseStation->packets; }
         baseStation->packets = new_packet;
+        if (Output == 0)
+            printf("Output 0 Received {%s} from %d \n", new_packet->packet, new_packet->id+1);
 
         free(test);
     }
@@ -408,10 +418,10 @@ void *baseListener(void *args) {
 
     if (base_in_range(srcX, srcY)) {
         printf("%s is in Range of the Base Station\n", srcName);
-        response(-2, clientSocket, 0, NULL, NULL);
+        response(-2, clientSocket, 0, 0, NULL, NULL);
         recv_packets(srcID);
     } else {
-        response(-1, clientSocket, 0, NULL, NULL);
+        response(-1, clientSocket, 0, 0, NULL, NULL);
     }
 
     free(buffer);
