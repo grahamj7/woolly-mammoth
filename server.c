@@ -198,7 +198,7 @@ void receiveNumPackets(struct nodes *tag, int socket) {
 }
 
 void exchangePackets(struct nodes *tag) {
-    int socket, numPackets;
+    int socket;
     for (int i=0; i<NumTags; i++) {
         socket = sendMessage(i, tag);
         if (socket == -1) continue;  // TODO
@@ -266,7 +266,7 @@ void response(int type, int client_fd, int id, struct nodes *tag, char *has) {
 void *listenerThread(void *args) {
     struct both *both1 = (struct both*)args;
     struct nodes *tag = both1->tag;
-    int my_socket = both1->socket, dstID, srcID, srcX, srcY;
+    int my_socket = both1->socket, srcID, srcX, srcY;
     char *buffer = malloc(sizeof(char)*BUFFSIZE);
     char *srcName = malloc(sizeof(char)*BUFFSIZE);
     char *srcHas= malloc(sizeof(char)*BUFFSIZE);
@@ -287,7 +287,7 @@ void *listenerThread(void *args) {
     srcID = atoi(strtok(NULL,"|"));
     srcX = atoi(strtok(NULL,"|"));
     srcY = atoi(strtok(NULL,"|"));
-    dstID = atoi(strtok(NULL,"|"));
+    atoi(strtok(NULL,"|"));
     strcpy(srcHas, strtok(NULL,"|"));
 
     if (in_range(srcX, srcY, tag)) {
@@ -440,7 +440,7 @@ void run_baseStation() {
 }
 
 int main(int argc, char *argv[]) {
-    char *port=STARTPORT, *s_port;
+    char *port=STARTPORT;
     /* Get command line args */
 
 //    if(argc < 6) {
