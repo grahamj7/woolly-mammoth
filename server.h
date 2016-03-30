@@ -16,11 +16,11 @@
 #include "connections.h"
 
 #define STARTPORT "31000"	/* the port users will be connecting to */
-#define NumTags 3
+#define NumTags 10
 #define GridSize 1001
 #define BUFFSIZE 1000
 
-int Dist=5, NumSteps=1, Range=400, Packets=5, Output=0, Delta;
+int Dist, NumSteps, Range, Packets, Output, Delta;
 
 struct packet_buffer {
     char* packet;
@@ -29,7 +29,7 @@ struct packet_buffer {
 };
 
 struct nodes {
-    int id, x, y, p_sockets[NumTags], has[NumTags], numRemaining, my_socket, packet_count;
+    int id, x, y, p_sockets[NumTags], has[NumTags], delete[NumTags], numRemaining, my_socket, packet_count;
     char *name, *port, *p_ports[NumTags];
     struct packet_buffer *packets;
 };

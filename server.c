@@ -94,16 +94,18 @@ void move(struct nodes *tag) {
 }
 
 int sendMessage(int i, struct nodes *tag) {
-    char *message=malloc(sizeof(char)*(BUFFSIZE)), *has=malloc(sizeof(char)*BUFFSIZE);
+    char *message=malloc(sizeof(char)*(BUFFSIZE)), *has=malloc(sizeof(char)*BUFFSIZE), *delete=malloc(sizeof(char)*BUFFSIZE);
     int socket;
 
     socket = connect_to_server(animal_tags[i]->p_ports[tag->id]);
 
-    for(int j=0; j<NumTags; j++)
-        if (tag->has[j]==1)
+    for(int j=0; j<NumTags; j++) {
+        if (tag->has[j] == 1)
             sprintf(has, "%s,%d", has, j);
-
-    sprintf(message,"|%s|%d|%d|%d|%d|{%s}|\0", tag->name, tag->id, tag->x, tag->y, i, has);
+        if (tag->delete[j] == 1)
+            sprintf(delete, "%s,%d", delete, j);
+    }
+    sprintf(message,"|%s|%d|%d|%d|%d|{%s}|{%s}|\0", tag->name, tag->id, tag->x, tag->y, i, has, delete);
     if (send(socket, message, strlen(message)+1, 0) == -1)
         fprintf(stdout, "sendMessage Error: sending to %d\n", socket);
     free(has);
@@ -121,6 +123,7 @@ void sendPackets(struct nodes *tag) {
     while(cursor != NULL) {
         if (tag->numRemaining <= 0) break;
         sprintf(message, "%s{%d=%s}", message, cursor->id, cursor->packet);
+        tag->delete[cursor->id] = 1;
         if (Output == tag->id+1)
             printf("Output %d Transmitting {%s} to %d \n", tag->id+1, cursor->packet, 0);
 
@@ -134,26 +137,28 @@ void sendPackets(struct nodes *tag) {
 
     if (send(socket, buffer, strlen(buffer)+1, 0) == -1)
         fprintf(stdout, "sendMessage Error: sending to %d\n", socket);
+    close(socket);
     free(message);
     free(buffer);
-
-//    TODO delete sent packets from all nodes
 }
 
 void receiveNumPackets(struct nodes *tag, int socket) {
     int packets, numbytes, type;
     char *buffer, *data_packet, *temp;
     temp=malloc(sizeof(char)*BUFFSIZE);
+
     numbytes = (int) recv(socket, temp, BUFFSIZE, MSG_PEEK);
     free(temp);
     buffer = malloc(sizeof(char) * numbytes);
+
     if (recv(socket, buffer, (size_t) numbytes, 0) == -1) {
         perror("recv error");
         exit(1);
     }
     type = atoi(strtok(buffer, "|"));
+
     if (type == -2)
-        sendPackets(tag);
+        return sendPackets(tag);
 
     int d_id = atoi(strtok(NULL, "|"));
     packets = atoi(strtok(NULL, "|"));
@@ -207,7 +212,6 @@ void exchangePackets(struct nodes *tag) {
     int socket;
     for (int i=0; i<NumTags; i++) {
         socket = sendMessage(i, tag);
-        if (socket == -1) continue;  // TODO
         receiveNumPackets(tag, socket);
         close(socket);
     }
@@ -232,19 +236,40 @@ int in_range(int srcX, int srcY, struct nodes *dst) {
     return 0;
 }
 
-void response(int type, int client_fd, int id, int d_id, struct nodes *tag, char *has) {
-    char *message, *temp;
-    int count=0;
+void response(int type, int client_fd, int id, int d_id, struct nodes *tag, char *has, char *delete) {
+    char *message, *temp, *c_index ;
+    int count=0, in;
+
+    if (delete != NULL) {
+        c_index = malloc(sizeof(char));
+        strtok(delete, ",");
+        struct packet_buffer *cursor, *prev;
+        while ((c_index = strtok(NULL, ",")) != NULL) {
+            in = atoi(c_index);
+            cursor = tag->packets;
+            while(cursor != NULL) {
+                prev = cursor;
+                if (cursor->id == in) {
+                    prev->next = cursor->next;
+                    free(cursor->packet);
+                    free(cursor);
+                }
+                cursor = prev->next;
+            }
+        }
+        free(c_index);
+    }
 
     if (tag != NULL && tag->numRemaining > 0) {
-        int has_list[NumTags]={0,0,0,0,0,0,0,0,0,0}, in;
-        char *c_index = malloc(sizeof(char));
+        int has_list[NumTags]={0,0,0,0,0,0,0,0,0,0};
+        c_index = malloc(sizeof(char));
         strtok(has, ",");
         while ((c_index = strtok(NULL, ",")) != NULL) {
             in = atoi(c_index);
             has_list[in] = 1;
         }
         free(c_index);
+
         temp = malloc(sizeof(char)*BUFFSIZE);
         bzero(temp, BUFFSIZE);
         struct packet_buffer *cursor = tag->packets;
@@ -278,6 +303,7 @@ void *listenerThread(void *args) {
     char *buffer = malloc(sizeof(char)*BUFFSIZE);
     char *srcName = malloc(sizeof(char)*BUFFSIZE);
     char *srcHas= malloc(sizeof(char)*BUFFSIZE);
+    char *srcDelete= malloc(sizeof(char)*BUFFSIZE);
 
     int clientSocket = getConnections(my_socket);
     if (clientSocket == -1) {
@@ -291,43 +317,46 @@ void *listenerThread(void *args) {
         exit(2);
     }
     buffer[numbytes] = '\0';
+
     strcpy(srcName, strtok(buffer,"|"));
     srcID = atoi(strtok(NULL,"|"));
     srcX = atoi(strtok(NULL,"|"));
     srcY = atoi(strtok(NULL,"|"));
     atoi(strtok(NULL,"|"));
     strcpy(srcHas, strtok(NULL,"|"));
+    strcpy(srcDelete, strtok(NULL,"|"));
 
     if (in_range(srcX, srcY, tag)) {
         printf("%s is in range of %s and %s is closer to the base\n", srcName, tag->name, srcName);
-        response(-1, clientSocket, srcID, tag->id, tag, srcHas);
+        response(-1, clientSocket, srcID, tag->id, tag, srcHas, srcDelete);
     } else
-        response(-1, clientSocket, 0, tag->id, NULL, NULL);
+        response(-1, clientSocket, 0, tag->id, NULL, NULL, NULL);
 
     free(buffer);
     free(srcName);
     free(srcHas);
+    free(srcDelete);
     close(clientSocket);
 
     pthread_exit(NULL);
 }
 
 void start_simulation(struct nodes *tag_info) {
-    pthread_t listen_thread;
+    pthread_t listen_thread[NumTags];
 
     for (int s=0; s<NumSteps; s++) {
         for(int i=0; i<NumTags; i++){
-            if (i == tag_info->id) continue; // TODO
+            if (i == tag_info->id) continue;
             both1[i] = malloc(sizeof(struct both));
             both1[i]->tag = tag_info;
             both1[i]->socket = tag_info->p_sockets[i];
-            pthread_create(&listen_thread, NULL, listenerThread, both1[i]);
+            pthread_create(&listen_thread[i], NULL, listenerThread, both1[i]);
         }
         move(tag_info);
         exchangePackets(tag_info);
 
-        // barrier
-        sleep(1);
+        for(int i=0; i<NumTags; i++)
+            pthread_join(listen_thread[i], NULL);
     }
     for (int i=0; i<NumTags; i++)
         free(both1[i]);
@@ -390,7 +419,7 @@ void recv_packets(int id) {
 
         free(test);
     }
-
+    close(clientSocket);
     free(buffer);
     free(data);
 }
@@ -413,6 +442,7 @@ void *baseListener(void *args) {
     }
     buffer[numbytes] = '\0';
 
+    fflush(stdout);
     strcpy(srcName, strtok(buffer, "|"));
     srcID = atoi(strtok(NULL, "|"));
     srcX = atoi(strtok(NULL, "|"));
@@ -420,10 +450,10 @@ void *baseListener(void *args) {
 
     if (base_in_range(srcX, srcY)) {
         printf("%s is in Range of the Base Station\n", srcName);
-        response(-2, clientSocket, 0, 0, NULL, NULL);
+        response(-2, clientSocket, 0, 0, NULL, NULL, NULL);
         recv_packets(srcID);
     } else {
-        response(-1, clientSocket, 0, 0, NULL, NULL);
+        response(-1, clientSocket, 0, 0, NULL, NULL, NULL);
     }
 
     free(buffer);
@@ -455,15 +485,15 @@ int main(int argc, char *argv[]) {
     char *port=STARTPORT;
     /* Get command line args */
 
-//    if(argc < 6) {
-//        printf("\nusage: ./delayTolerant <Steps> <Distance> <Range> <Packets> <Output>\n");
-//        return 1;
-//    }
-//    NumSteps = atoi(argv[1]);
-//    Dist = atoi(argv[2]);
-//    Range = atoi(argv[3]);
-//    Packets = atoi(argv[4]);
-//    Output = atoi(argv[5]);
+    if(argc < 6) {
+        printf("\nusage: ./delayTolerant <Steps> <Distance> <Range> <Packets> <Output>\n");
+        return 1;
+    }
+    NumSteps = atoi(argv[1]);
+    Dist = atoi(argv[2]);
+    Range = atoi(argv[3]);
+    Packets = atoi(argv[4]);
+    Output = atoi(argv[5]);
     Delta = Range/10;
 
     srand((unsigned int) time(NULL));
@@ -502,6 +532,7 @@ int main(int argc, char *argv[]) {
 
 
         for(int j=0; j<NumTags; j++){
+            animal_tags[i]->delete[j] = 0;
             if (j == i) {
                 animal_tags[i]->has[j] = 1;
                 animal_tags[i]->p_ports[j] = baseStation->p_ports[i];
